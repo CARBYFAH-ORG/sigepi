@@ -144,6 +144,12 @@
   .field input,.field select{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.92rem;color:var(--text);font-family:inherit}
   .field input:focus,.field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
   .modal-f{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border)}
+  .combo{position:relative}
+  .combo-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);max-height:210px;overflow-y:auto;z-index:8;display:none}
+  .combo-list.show{display:block}
+  .combo-opt{padding:9px 12px;font-size:.9rem;cursor:pointer;color:var(--text)}
+  .combo-opt:hover{background:var(--primary-soft);color:var(--primary)}
+  .combo-opt.new{color:var(--primary);font-weight:600}
 
   /* ── TOAST ── */
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(90px);background:var(--card);border:1px solid var(--border);border-left:4px solid var(--primary);color:var(--text);padding:13px 18px;border-radius:11px;font-size:.88rem;transition:.3s;z-index:80;box-shadow:var(--shadow-md);max-width:90vw}
@@ -282,15 +288,13 @@
     <div class="modal-b">
       <div class="grid2">
         <div class="field full"><label>Nombre completo *</label><input id="r-nombre" autocomplete="off"></div>
-        <div class="field"><label>Grado</label><input id="r-grado" list="dl-grado" autocomplete="off"></div>
-        <div class="field"><label>País</label><input id="r-pais" list="dl-pais" autocomplete="off"></div>
-        <div class="field full"><label>Curso</label><input id="r-curso" autocomplete="off"></div>
-        <div class="field full"><label>Centro de formación</label><input id="r-centro" autocomplete="off"></div>
+        <div class="field"><label>Grado</label><div class="combo"><input id="r-grado" autocomplete="off" placeholder="Escribe o elige…"></div></div>
+        <div class="field"><label>País</label><div class="combo"><input id="r-pais" autocomplete="off" placeholder="Escribe o elige…"></div></div>
+        <div class="field full"><label>Curso</label><div class="combo"><input id="r-curso" autocomplete="off" placeholder="Escribe o elige…"></div></div>
+        <div class="field full"><label>Centro de formación</label><div class="combo"><input id="r-centro" autocomplete="off" placeholder="Escribe o elige…"></div></div>
         <div class="field"><label>Fecha inicio</label><input type="date" id="r-inicio"></div>
         <div class="field"><label>Fecha fin</label><input type="date" id="r-fin"></div>
       </div>
-      <datalist id="dl-grado"></datalist>
-      <datalist id="dl-pais"></datalist>
     </div>
     <div class="modal-f"><button class="btn" onclick="cerrar('ov-reg')">Cancelar</button><button class="btn btn-primary" id="reg-save">Guardar</button></div>
   </div>
@@ -493,13 +497,27 @@ async function cargarAuditoria(){
 }
 
 /* ── Modal registro ── */
-function llenarDatalists(){
-  const todos=DATA.extranjeros.concat(DATA.hondurenos);
-  const grados=[...new Set(todos.map(r=>r.grado).filter(Boolean))].sort();
-  const paises=[...new Set(todos.map(r=>r.pais).filter(Boolean))].sort();
-  document.getElementById('dl-grado').innerHTML=grados.map(g=>`<option value="${esc(g)}">`).join('');
-  document.getElementById('dl-pais').innerHTML=paises.map(p=>`<option value="${esc(p)}">`).join('');
+function distinctVals(campo){return [...new Set(DATA.extranjeros.concat(DATA.hondurenos).map(r=>String(r[campo]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));}
+function llenarDatalists(){} /* reemplazado por combos de búsqueda */
+function makeCombo(input,campo){
+  const cont=input.parentNode;
+  const list=document.createElement('div'); list.className='combo-list'; cont.appendChild(list);
+  function render(){
+    const f=input.value.trim();
+    let vals=distinctVals(campo);
+    if(f) vals=vals.filter(v=>v.toLowerCase().indexOf(f.toLowerCase())!==-1);
+    let html=vals.slice(0,60).map(v=>`<div class="combo-opt" data-v="${esc(v)}">${esc(v)}</div>`).join('');
+    const existe=distinctVals(campo).some(v=>v.toLowerCase()===f.toLowerCase());
+    if(f && !existe) html+=`<div class="combo-opt new" data-v="${esc(f)}">+ Agregar "${esc(f)}"</div>`;
+    if(!html) html='<div class="combo-opt" style="cursor:default;color:var(--text-soft)">Escribe para agregar el primero…</div>';
+    list.innerHTML=html;
+  }
+  input.addEventListener('focus',()=>{render();list.classList.add('show');});
+  input.addEventListener('input',()=>{render();list.classList.add('show');});
+  input.addEventListener('blur',()=>setTimeout(()=>list.classList.remove('show'),150));
+  list.addEventListener('mousedown',e=>{const o=e.target.closest('.combo-opt');if(!o||o.dataset.v===undefined)return;input.value=o.dataset.v;list.classList.remove('show');});
 }
+function setupCombos(){ [['r-grado','grado'],['r-pais','pais'],['r-curso','curso'],['r-centro','centro']].forEach(a=>makeCombo(document.getElementById(a[0]),a[1])); }
 function abrirNuevo(tabla){
   regCtx={tabla,id:null};
   document.getElementById('reg-title').textContent='Nuevo registro';
@@ -594,6 +612,7 @@ document.getElementById('btn-logout').addEventListener('click',()=>{if(confirm('
 /* ── Init ── */
 (function init(){
   if(!API_URL){document.getElementById('l-err').textContent='⚠ Falta configurar API_URL en el index.html';document.getElementById('l-err').classList.add('show');return;}
+  setupCombos();
   if(S.token){ mostrarApp(); }
 })();
 </script>
