@@ -154,6 +154,12 @@
   .cf-ic svg{width:24px;height:24px}
   .cf-ic.danger{background:var(--red-soft);color:var(--red-text)}
   .cf-ic.info{background:var(--primary-soft);color:var(--primary)}
+  #cat-cont{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  #cat-cont .panel{margin:0}
+  .cat-list{max-height:320px;overflow-y:auto}
+  .cat-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px;font-size:.9rem}
+  .cat-item span{flex:1;word-break:break-word}
+  @media(max-width:880px){#cat-cont{grid-template-columns:1fr}}
 
   /* ── TOAST ── */
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(90px);background:var(--card);border:1px solid var(--border);border-left:4px solid var(--primary);color:var(--text);padding:13px 18px;border-radius:11px;font-size:.88rem;transition:.3s;z-index:80;box-shadow:var(--shadow-md);max-width:90vw}
@@ -207,6 +213,10 @@
       <a data-view="hondurenos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>
         Hondureños en exterior</a>
+      <div class="grp can-edit">Gestión</div>
+      <a data-view="catalogos" class="can-edit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="19" cy="17" r="2"/></svg>
+        Catálogos</a>
       <div class="grp only-admin">Administración</div>
       <a data-view="usuarios" class="only-admin">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M21 20a6 6 0 0 0-5-5.9"/></svg>
@@ -268,6 +278,14 @@
         <div class="tbl-wrap" id="tbl-hondurenos"></div>
       </section>
 
+      <!-- CATÁLOGOS -->
+      <section class="view can-edit" id="v-catalogos">
+        <div class="page-title">Catálogos</div>
+        <div class="page-sub">Administra los valores de País, Grado, Curso y Centro usados en todo el sistema. Al renombrar uno, se actualiza en todos los registros que lo usan.</div>
+        <div class="toolbar"><div style="flex:1"></div><button class="btn" onclick="catSync()">↻ Sincronizar desde registros</button></div>
+        <div id="cat-cont"></div>
+      </section>
+
       <!-- USUARIOS -->
       <section class="view only-admin" id="v-usuarios">
         <div class="page-title">Usuarios</div>
@@ -327,6 +345,18 @@
   </div>
 </div>
 
+<!-- MODAL CATÁLOGO -->
+<div class="overlay" id="ov-cat">
+  <div class="modal" style="max-width:430px">
+    <div class="modal-h"><h3 id="cat-title">Renombrar valor</h3><button class="modal-x" onclick="cerrar('ov-cat')">&times;</button></div>
+    <div class="modal-b">
+      <div class="field"><label id="cat-label">Valor</label><input id="cat-input" autocomplete="off"></div>
+      <p style="font-size:.8rem;color:var(--text-dim);line-height:1.5">Al guardar, este valor se actualizará también en todos los registros que lo usan.</p>
+    </div>
+    <div class="modal-f"><button class="btn" onclick="cerrar('ov-cat')">Cancelar</button><button class="btn btn-primary" id="cat-save">Guardar</button></div>
+  </div>
+</div>
+
 <!-- MODAL CONFIRMAR -->
 <div class="overlay" id="ov-confirm">
   <div class="modal" style="max-width:420px">
@@ -343,7 +373,7 @@
 
 <script>
 /* ════════ CONFIGURACIÓN ════════ */
-const API_URL = "https://script.google.com/macros/s/AKfycbwLzeuRVgzHohkXlNeJkt3ZUJxB4t8sblZJPAAlt4UVw4L9DH4GIhGr7BtmWlPW3NsN/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzhwO9yBqK9px4AIb-RP7_S0nWjcFu5Lsq_MijHuR1Lk0e5WfJiOsWfm8caKq0wYS2L/exec";
 /* ════════════════════════════════ */
 
 const _mem={};
@@ -353,6 +383,9 @@ const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return _mem[k]|
 
 let S={token:store.get('sig_token'),rol:store.get('sig_rol'),nombre:store.get('sig_nombre'),usuario:store.get('sig_user')};
 let DATA={extranjeros:[],hondurenos:[]};
+let CAT={pais:[],centro:[],grado:[],curso:[]};
+const CAT_DEFS=[['pais','Países'],['grado','Grados'],['curso','Cursos'],['centro','Centros de formación']];
+let catCtx={tipo:null,valor:null};
 let regCtx={tabla:null,id:null};
 
 /* ── API ── */
@@ -414,7 +447,7 @@ function mostrarApp(){
 }
 
 /* ── Navegación ── */
-const titulos={dashboard:'Dashboard',extranjeros:'Extranjeros en HN',hondurenos:'Hondureños en exterior',usuarios:'Usuarios'};
+const titulos={dashboard:'Dashboard',extranjeros:'Extranjeros en HN',hondurenos:'Hondureños en exterior',catalogos:'Catálogos',usuarios:'Usuarios'};
 document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',e=>{
   e.preventDefault();
   document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));
@@ -425,6 +458,7 @@ document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',e=>{
   document.getElementById('tb-title').textContent=titulos[v]||'';
   document.getElementById('sidebar').classList.remove('open');
   if(v==='usuarios') cargarUsuarios();
+  if(v==='catalogos') renderCatalogos();
   if(v==='dashboard') pintarDashboard();
 }));
 document.getElementById('menu-btn').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
@@ -432,8 +466,13 @@ document.getElementById('menu-btn').addEventListener('click',()=>document.getEle
 /* ── Carga de datos ── */
 async function cargarTodo(){
   try{
-    const [ext,hon]=await Promise.all([api({action:'list',tabla:'extranjeros',token:S.token}),api({action:'list',tabla:'hondurenos',token:S.token})]);
+    const [ext,hon,cat]=await Promise.all([
+      api({action:'list',tabla:'extranjeros',token:S.token}),
+      api({action:'list',tabla:'hondurenos',token:S.token}),
+      api({action:'catalogos',token:S.token})
+    ]);
     DATA.extranjeros=(ext.registros||[]); DATA.hondurenos=(hon.registros||[]);
+    if(cat&&cat.catalogos) CAT=cat.catalogos;
     pintarFiltros('extranjeros'); pintarFiltros('hondurenos');
     pintarTabla('extranjeros'); pintarTabla('hondurenos');
     pintarDashboard();
@@ -514,16 +553,21 @@ async function cargarAuditoria(){
 
 /* ── Modal registro ── */
 function distinctVals(campo){return [...new Set(DATA.extranjeros.concat(DATA.hondurenos).map(r=>String(r[campo]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));}
+function comboOptions(campo){
+  const set={}; (CAT[campo]||[]).forEach(v=>{v=String(v).trim();if(v)set[v.toLowerCase()]=v;});
+  DATA.extranjeros.concat(DATA.hondurenos).forEach(r=>{const v=String(r[campo]||'').trim();if(v)set[v.toLowerCase()]=v;});
+  return Object.keys(set).map(k=>set[k]).sort((a,b)=>a.localeCompare(b,'es'));
+}
 function llenarDatalists(){} /* reemplazado por combos de búsqueda */
 function makeCombo(input,campo){
   const cont=input.parentNode;
   const list=document.createElement('div'); list.className='combo-list'; cont.appendChild(list);
   function render(){
     const f=input.value.trim();
-    let vals=distinctVals(campo);
+    let vals=comboOptions(campo);
     if(f) vals=vals.filter(v=>v.toLowerCase().indexOf(f.toLowerCase())!==-1);
     let html=vals.slice(0,60).map(v=>`<div class="combo-opt" data-v="${esc(v)}">${esc(v)}</div>`).join('');
-    const existe=distinctVals(campo).some(v=>v.toLowerCase()===f.toLowerCase());
+    const existe=comboOptions(campo).some(v=>v.toLowerCase()===f.toLowerCase());
     if(f && !existe) html+=`<div class="combo-opt new" data-v="${esc(f)}">+ Agregar "${esc(f)}"</div>`;
     if(!html) html='<div class="combo-opt" style="cursor:default;color:var(--text-soft)">Escribe para agregar el primero…</div>';
     list.innerHTML=html;
@@ -616,6 +660,66 @@ document.getElementById('pass-save').addEventListener('click',async function(){
   try{const r=await api({action:'cambiar_pass',token:S.token,pass},'POST');if(!r.ok)throw new Error(r.error);toast('Contraseña cambiada.','ok');cerrar('ov-pass');}
   catch(e){toast(e.message,'err');}finally{this.disabled=false;}
 });
+
+/* ── CATÁLOGOS ── */
+function renderCatalogos(){
+  const cont=document.getElementById('cat-cont');
+  cont.innerHTML=CAT_DEFS.map(d=>{
+    const t=d[0], lbl=d[1], items=CAT[t]||[];
+    const filas=items.length?items.map((v,i)=>`<div class="cat-item"><span>${esc(v)}</span><div class="acts">
+        <button class="btn btn-sm can-edit" onclick="catEdit('${t}',${i})">Editar</button>
+        <button class="btn btn-sm btn-danger only-admin" onclick="catDel('${t}',${i})">✕</button>
+      </div></div>`).join(''):'<div class="tbl-empty" style="padding:22px">Sin valores aún.</div>';
+    return `<div class="panel"><div class="panel-h"><h3>${lbl}</h3><span style="margin-left:auto;color:var(--text-soft);font-size:.8rem">${items.length}</span></div>
+      <div class="panel-b">
+        <div class="toolbar can-edit" style="margin-bottom:12px">
+          <input id="catnew-${t}" placeholder="Agregar ${lbl.toLowerCase()}…" style="flex:1" onkeydown="if(event.key==='Enter')catAdd('${t}')">
+          <button class="btn btn-primary" onclick="catAdd('${t}')">+ Agregar</button>
+        </div>
+        <div class="cat-list">${filas}</div>
+      </div></div>`;
+  }).join('');
+}
+async function catAdd(tipo){
+  const inp=document.getElementById('catnew-'+tipo); const valor=inp.value.trim();
+  if(!valor){toast('Escribe un valor.','err');return;}
+  try{const r=await api({action:'cat_crear',token:S.token,tipo,valor},'POST');if(!r.ok)throw new Error(r.error);
+    toast('Agregado.','ok'); inp.value=''; await recargarCatalogos();
+  }catch(e){toast(e.message,'err');}
+}
+function catEdit(tipo,i){
+  catCtx={tipo,valor:CAT[tipo][i]};
+  document.getElementById('cat-title').textContent='Renombrar valor';
+  document.getElementById('cat-input').value=CAT[tipo][i];
+  abrir('ov-cat'); setTimeout(()=>document.getElementById('cat-input').focus(),50);
+}
+document.getElementById('cat-save').addEventListener('click',async function(){
+  const nuevo=document.getElementById('cat-input').value.trim();
+  if(!nuevo){toast('El valor no puede estar vacío.','err');return;}
+  this.disabled=true;
+  try{const r=await api({action:'cat_editar',token:S.token,tipo:catCtx.tipo,valor:catCtx.valor,nuevo},'POST');
+    if(!r.ok)throw new Error(r.error);
+    toast('Actualizado'+(r.actualizados?` (${r.actualizados} registro(s) cambiados)`:'')+'.','ok');
+    cerrar('ov-cat'); await cargarTodo(); renderCatalogos();
+  }catch(e){toast(e.message,'err');}finally{this.disabled=false;}
+});
+async function catDel(tipo,i){
+  const valor=CAT[tipo][i];
+  const ok=await confirmar({titulo:'Borrar del catálogo',msg:'¿Quitar "'+valor+'" del catálogo? Los registros que ya lo usan no se modifican.',ok:'Sí, quitar',danger:true});
+  if(!ok)return;
+  try{const r=await api({action:'cat_borrar',token:S.token,tipo,valor},'POST');if(!r.ok)throw new Error(r.error);
+    toast('Quitado.','ok'); await recargarCatalogos();
+  }catch(e){toast(e.message,'err');}
+}
+async function catSync(){
+  try{const r=await api({action:'cat_sync',token:S.token},'POST');if(!r.ok)throw new Error(r.error);
+    toast('Sincronizado: '+(r.agregados||0)+' valor(es) nuevo(s).','ok'); await recargarCatalogos();
+  }catch(e){toast(e.message,'err');}
+}
+async function recargarCatalogos(){
+  try{const res=await api({action:'catalogos',token:S.token});if(res&&res.catalogos)CAT=res.catalogos;renderCatalogos();}
+  catch(e){toast(e.message,'err');}
+}
 
 /* ── Modales util ── */
 const ICO_INFO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>';
