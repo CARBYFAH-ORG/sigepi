@@ -114,7 +114,7 @@
   .btn-danger:hover{background:var(--red-soft)}
   .btn-sm{padding:6px 10px;font-size:.78rem;border-radius:8px}
 
-  .tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow-x:auto}
   table{width:100%;border-collapse:collapse}
   thead th{background:var(--soft);text-align:left;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--border);white-space:nowrap}
   tbody td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:.9rem;vertical-align:middle}
@@ -188,6 +188,38 @@
   .info-txt strong{color:var(--text)}
   .info-note{background:var(--soft);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:10px;padding:14px 16px;font-size:.88rem;color:var(--text-dim);line-height:1.6;margin-top:8px}
   .info-note b{color:var(--text)}
+
+  /* ── RESPONSIVE MÓVIL ── */
+  @media(max-width:640px){
+    .content{padding:18px 14px}
+    .topbar{padding:0 16px;gap:10px}
+    .topbar .clock{display:none}
+    .topbar h2{font-size:1.05rem}
+    .page-title{font-size:1.25rem}
+    .page-sub{font-size:.85rem}
+    .cards{grid-template-columns:1fr 1fr;gap:12px}
+    .stat{padding:14px 16px}
+    .stat .n{font-size:1.55rem}
+    .stat .ico{width:36px;height:36px;margin-bottom:9px}
+    .modal-b{padding:18px}
+    .panel-b{padding:14px}
+    .toolbar input{min-width:0}
+    .bars .bl{width:96px}
+    /* tablas convertidas en tarjetas apiladas */
+    .tbl-wrap{overflow:visible;border:none;background:transparent;box-shadow:none}
+    table,thead,tbody,tr,td{display:block;width:100%}
+    thead{display:none}
+    tbody tr{background:var(--card);border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow);margin-bottom:12px;padding:6px 0}
+    tbody tr:hover{background:var(--card)}
+    tbody td{border:none;padding:7px 16px}
+    tbody td[data-label]::before{content:attr(data-label);display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft);font-weight:600;margin-bottom:2px}
+    .acts{justify-content:flex-start;flex-wrap:wrap}
+    .acts .btn{flex:1;justify-content:center;min-width:96px}
+    .wa-btn{width:100%;justify-content:center;text-align:center}
+  }
+  @media(max-width:380px){
+    .cards{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
@@ -578,13 +610,13 @@ function pintarTabla(tabla){
   const rows=regs.map(r=>{
     const e=estadoCurso(r.fin);
     return `<tr>
-      <td><div class="nm">${esc(r.nombre)}</div><div class="mono">${esc(r.id)} · ${esc(r.grado||'—')}${r.arma?' · '+esc(r.arma):''}</div></td>
-      <td>${esc(r.pais||'—')}</td>
-      <td>${esc(r.curso||'—')}</td>
-      <td>${esc(r.centro||'—')}</td>
-      <td>${fechaCorta(r.inicio)||'—'}<br><span class="mono">→ ${fechaCorta(r.fin)||'—'}</span></td>
-      <td><span class="pill ${e.cls}">${e.txt}</span></td>
-      <td><div class="acts">
+      <td data-label="Nombre"><div class="nm">${esc(r.nombre)}</div><div class="mono">${esc(r.id)} · ${esc(r.grado||'—')}${r.arma?' · '+esc(r.arma):''}</div></td>
+      <td data-label="País">${esc(r.pais||'—')}</td>
+      <td data-label="Curso">${esc(r.curso||'—')}</td>
+      <td data-label="Centro">${esc(r.centro||'—')}</td>
+      <td data-label="Fechas">${fechaCorta(r.inicio)||'—'}<br><span class="mono">→ ${fechaCorta(r.fin)||'—'}</span></td>
+      <td data-label="Estado"><span class="pill ${e.cls}">${e.txt}</span></td>
+      <td data-label="Acciones"><div class="acts">
         <button class="btn btn-sm can-edit" onclick="abrirEditar('${tabla}','${r.id}')">Editar</button>
         <button class="btn btn-sm btn-danger only-admin" onclick="borrarReg('${tabla}','${r.id}')">Borrar</button>
       </div></td>
@@ -706,12 +738,12 @@ async function cargarUsuarios(){
     const res=await api({action:'usuarios',token:S.token});
     const us=res.usuarios||[];
     const rows=us.map(u=>`<tr>
-      <td><div class="nm">${esc(u.nombre||u.usuario)}</div><div class="mono">${esc(u.usuario)}</div></td>
-      <td><select class="btn btn-sm" onchange="cambiarRol('${esc(u.usuario)}',this.value)">
+      <td data-label="Usuario"><div class="nm">${esc(u.nombre||u.usuario)}</div><div class="mono">${esc(u.usuario)}</div></td>
+      <td data-label="Rol"><select class="btn btn-sm" onchange="cambiarRol('${esc(u.usuario)}',this.value)">
         ${['consulta','editor','admin'].map(r=>`<option value="${r}" ${u.rol===r?'selected':''}>${r}</option>`).join('')}
       </select></td>
-      <td><span class="pill ${u.activo?'curso':'fin'}">${u.activo?'Activo':'Inactivo'}</span></td>
-      <td><div class="acts"><button class="btn btn-sm" onclick="toggleUsuario('${esc(u.usuario)}',${u.activo?'false':'true'})">${u.activo?'Desactivar':'Activar'}</button></div></td>
+      <td data-label="Estado"><span class="pill ${u.activo?'curso':'fin'}">${u.activo?'Activo':'Inactivo'}</span></td>
+      <td data-label="Acción"><div class="acts"><button class="btn btn-sm" onclick="toggleUsuario('${esc(u.usuario)}',${u.activo?'false':'true'})">${u.activo?'Desactivar':'Activar'}</button></div></td>
     </tr>`).join('');
     document.getElementById('tbl-usuarios').innerHTML=`<table><thead><tr><th>Nombre / Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
   }catch(e){toast(e.message,'err');}
@@ -770,10 +802,10 @@ function aplicarReporte(){
   const cont=document.getElementById('rep-tbl');
   if(!regs.length){cont.innerHTML='<div class="tbl-empty">Sin resultados con esos filtros.</div>';return;}
   const rows=regs.map(r=>{const e=estadoCurso(r.fin);return `<tr>
-    <td><div class="nm">${esc(r.nombre)}</div><div class="mono">${esc(r.id)} · ${esc(r.grado||'—')}${r.arma?' · '+esc(r.arma):''}</div></td>
-    <td>${esc(r.seccion)}</td><td>${esc(r.pais||'—')}</td><td>${esc(r.curso||'—')}</td>
-    <td>${fechaCorta(r.inicio)||'—'}<br><span class="mono">→ ${fechaCorta(r.fin)||'—'}</span></td>
-    <td><span class="pill ${e.cls}">${e.txt}</span></td></tr>`;}).join('');
+    <td data-label="Nombre"><div class="nm">${esc(r.nombre)}</div><div class="mono">${esc(r.id)} · ${esc(r.grado||'—')}${r.arma?' · '+esc(r.arma):''}</div></td>
+    <td data-label="Sección">${esc(r.seccion)}</td><td data-label="País">${esc(r.pais||'—')}</td><td data-label="Curso">${esc(r.curso||'—')}</td>
+    <td data-label="Fechas">${fechaCorta(r.inicio)||'—'}<br><span class="mono">→ ${fechaCorta(r.fin)||'—'}</span></td>
+    <td data-label="Estado"><span class="pill ${e.cls}">${e.txt}</span></td></tr>`;}).join('');
   cont.innerHTML=`<table><thead><tr><th>Nombre / Grado</th><th>Sección</th><th>País</th><th>Curso</th><th>Fechas</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function exportarExcel(){
