@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGEPI · Personal de Intercambio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f1f5f9;--card:#fff;--soft:#f8fafc;--border:#e2e8f0;
+    --text:#1e293b;--text-dim:#64748b;--text-soft:#94a3b8;
+    --primary:#465fff;--primary-dark:#3743c4;--primary-soft:#eef1ff;
+    --side:#0f172a;--side-2:#1e293b;--side-text:#cbd5e1;
+    --amber:#f59e0b;--amber-soft:#fef3c7;--amber-text:#b45309;
+    --green:#16a34a;--green-soft:#dcfce7;--green-text:#15803d;
+    --red:#ef4444;--red-soft:#fee2e2;--red-text:#b91c1c;
+    --shadow:0 1px 3px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.04);
+    --shadow-md:0 6px 16px rgba(16,24,40,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+  a{text-decoration:none}
+  button{font-family:inherit;cursor:pointer}
+  .hidden{display:none!important}
+
+  /* ── LOGIN ── */
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:radial-gradient(1200px 500px at 50% -10%,#e2e8ff,transparent),var(--bg)}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow-md);
+    padding:36px 32px;width:100%;max-width:400px}
+  .login-card .logo{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .login-card .logo b{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
+  .login-card .logo .badge-mil{width:38px;height:38px;border-radius:10px;background:var(--primary);display:grid;place-items:center;color:#fff;font-weight:700}
+  .login-card p.sub{color:var(--text-dim);font-size:.85rem;margin-bottom:22px}
+  .login-card label{display:block;font-size:.82rem;font-weight:500;color:var(--text-dim);margin:14px 0 6px}
+  .login-card input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 13px;font-size:.95rem;color:var(--text)}
+  .login-card input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .login-card button{width:100%;margin-top:22px;background:var(--primary);color:#fff;border:none;border-radius:11px;padding:13px;font-weight:600;font-size:.98rem;transition:.15s}
+  .login-card button:hover{background:var(--primary-dark)}
+  .login-card button:disabled{opacity:.6}
+  .login-err{margin-top:14px;background:var(--red-soft);border:1px solid #fca5a5;color:var(--red-text);font-size:.83rem;padding:10px 12px;border-radius:9px;display:none}
+  .login-err.show{display:block}
+  .login-hint{margin-top:18px;font-size:.76rem;color:var(--text-soft);text-align:center}
+
+  /* ── SHELL ── */
+  #app{display:flex;min-height:100vh}
+  .sidebar{width:250px;background:var(--side);color:var(--side-text);display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0;z-index:40;transition:transform .25s}
+  .sidebar .brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px;border-bottom:1px solid #1e293b}
+  .sidebar .brand .badge-mil{width:36px;height:36px;border-radius:9px;background:var(--primary);display:grid;place-items:center;color:#fff;font-weight:700;flex:none}
+  .sidebar .brand b{color:#fff;font-size:1.15rem;letter-spacing:-.01em;line-height:1}
+  .sidebar .brand span{display:block;font-size:.66rem;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+  .nav{flex:1;padding:14px 12px;overflow-y:auto}
+  .nav .grp{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#475569;padding:14px 10px 6px}
+  .nav a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:9px;color:var(--side-text);font-weight:500;font-size:.92rem;transition:.13s;margin-bottom:2px}
+  .nav a svg{width:18px;height:18px;flex:none;opacity:.85}
+  .nav a:hover{background:var(--side-2);color:#fff}
+  .nav a.active{background:var(--primary);color:#fff}
+  .nav a.active svg{opacity:1}
+  .sidebar .sfoot{padding:14px;border-top:1px solid #1e293b}
+  .sidebar .sfoot .who{font-size:.84rem;color:#fff;font-weight:600}
+  .sidebar .sfoot .rol{font-size:.72rem;color:#64748b;text-transform:capitalize}
+  .btn-logout{display:flex;align-items:center;gap:9px;width:100%;margin-top:12px;background:var(--side-2);border:none;color:var(--side-text);padding:10px 12px;border-radius:9px;font-size:.86rem;font-weight:500;transition:.13s}
+  .btn-logout:hover{background:#33405a;color:#fff}
+  .btn-logout svg{width:16px;height:16px}
+
+  .main{margin-left:250px;flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{height:64px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 26px;position:sticky;top:0;z-index:30}
+  .topbar .menu-btn{display:none;background:none;border:1px solid var(--border);border-radius:8px;padding:7px 9px;color:var(--text-dim)}
+  .topbar h2{font-size:1.15rem;font-weight:700;letter-spacing:-.01em}
+  .topbar .clock{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-dim);background:var(--bg);padding:6px 12px;border-radius:8px}
+  .content{flex:1;padding:28px 26px}
+  .footer{border-top:1px solid var(--border);padding:14px 26px;color:var(--text-soft);font-size:.78rem;background:var(--card);text-align:center}
+  .view{display:none}.view.active{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .page-title{font-size:1.5rem;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+  .page-sub{color:var(--text-dim);font-size:.9rem;margin-bottom:22px}
+
+  /* ── CARDS / MÉTRICAS ── */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:26px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+  .stat .ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;margin-bottom:12px}
+  .stat .ico svg{width:21px;height:21px}
+  .stat .n{font-size:1.9rem;font-weight:700;line-height:1}
+  .stat .l{color:var(--text-dim);font-size:.84rem;margin-top:4px}
+  .ico.blue{background:var(--primary-soft);color:var(--primary)}
+  .ico.green{background:var(--green-soft);color:var(--green-text)}
+  .ico.amber{background:var(--amber-soft);color:var(--amber-text)}
+  .ico.slate{background:#e2e8f0;color:#475569}
+
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);margin-bottom:22px}
+  .panel-h{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .panel-h h3{font-size:1rem;font-weight:600}
+  .panel-b{padding:18px 20px}
+  .bars .bar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:.86rem}
+  .bars .bl{width:130px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bars .bt{flex:1;background:var(--bg);border-radius:6px;height:10px;overflow:hidden}
+  .bars .bf{height:100%;background:var(--primary);border-radius:6px}
+  .bars .bn{width:34px;text-align:right;font-weight:600}
+
+  /* ── TOOLBAR + TABLA ── */
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .toolbar input,.toolbar select{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.9rem;color:var(--text);font-family:inherit}
+  .toolbar input{flex:1;min-width:200px}
+  .toolbar input:focus,.toolbar select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:10px;padding:10px 15px;font-size:.88rem;font-weight:600;transition:.14s;display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{background:var(--soft)}
+  .btn svg{width:16px;height:16px}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-dark)}
+  .btn-danger{color:var(--red-text);border-color:#fca5a5}
+  .btn-danger:hover{background:var(--red-soft)}
+  .btn-sm{padding:6px 10px;font-size:.78rem;border-radius:8px}
+
+  .tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{background:var(--soft);text-align:left;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--border);white-space:nowrap}
+  tbody td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:.9rem;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--soft)}
+  td .nm{font-weight:600}
+  td .mono{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text-dim)}
+  .pill{font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:9999px;white-space:nowrap}
+  .pill.curso{background:var(--green-soft);color:var(--green-text)}
+  .pill.fin{background:#e2e8f0;color:#475569}
+  .pill.pronto{background:var(--amber-soft);color:var(--amber-text)}
+  .pill.rol{background:var(--primary-soft);color:var(--primary);text-transform:capitalize}
+  .acts{display:flex;gap:6px;justify-content:flex-end}
+  .tbl-empty{padding:46px;text-align:center;color:var(--text-dim);font-size:.9rem}
+
+  /* ── MODAL ── */
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:60;overflow-y:auto}
+  .overlay.show{display:flex}
+  .modal{background:var(--card);border-radius:16px;box-shadow:var(--shadow-md);width:100%;max-width:520px;animation:fade .2s ease}
+  .modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border)}
+  .modal-h h3{font-size:1.1rem;font-weight:700}
+  .modal-x{background:none;border:none;font-size:1.4rem;color:var(--text-soft);line-height:1}
+  .modal-b{padding:22px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{margin-bottom:14px}
+  .field.full{grid-column:1/-1}
+  .field label{display:block;font-size:.8rem;font-weight:500;color:var(--text-dim);margin-bottom:6px}
+  .field input,.field select{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.92rem;color:var(--text);font-family:inherit}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .modal-f{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border)}
+
+  /* ── TOAST ── */
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(90px);background:var(--card);border:1px solid var(--border);border-left:4px solid var(--primary);color:var(--text);padding:13px 18px;border-radius:11px;font-size:.88rem;transition:.3s;z-index:80;box-shadow:var(--shadow-md);max-width:90vw}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.err{border-left-color:var(--red)}
+  .toast.ok{border-left-color:var(--green)}
+
+  /* roles */
+  body.role-consulta .can-edit{display:none!important}
+  body:not(.role-admin) .only-admin{display:none!important}
+
+  @media(max-width:880px){
+    .sidebar{transform:translateX(-100%)}
+    .sidebar.open{transform:translateX(0)}
+    .main{margin-left:0}
+    .topbar .menu-btn{display:inline-flex}
+    .grid2{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login">
+  <div class="login-card">
+    <div class="logo"><span class="badge-mil">FA</span><b>SIGEPI</b></div>
+    <p class="sub">Sistema de Gestión de Personal de Intercambio</p>
+    <label for="l-user">Usuario</label>
+    <input id="l-user" autocomplete="username" placeholder="admin">
+    <label for="l-pass">Contraseña</label>
+    <input id="l-pass" type="password" autocomplete="current-password" placeholder="••••••••">
+    <div class="login-err" id="l-err"></div>
+    <button id="l-btn">Iniciar sesión</button>
+    <div class="login-hint">Acceso restringido · uso interno</div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app" class="hidden">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="badge-mil">FA</span><div><b>SIGEPI</b><span>Personal de Intercambio</span></div></div>
+    <nav class="nav">
+      <div class="grp">Principal</div>
+      <a data-view="dashboard" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Dashboard</a>
+      <div class="grp">Registros</div>
+      <a data-view="extranjeros">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>
+        Extranjeros en HN</a>
+      <a data-view="hondurenos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>
+        Hondureños en exterior</a>
+      <div class="grp only-admin">Administración</div>
+      <a data-view="usuarios" class="only-admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M21 20a6 6 0 0 0-5-5.9"/></svg>
+        Usuarios</a>
+    </nav>
+    <div class="sfoot">
+      <div class="who" id="sb-nombre">—</div>
+      <div class="rol" id="sb-rol">—</div>
+      <button class="btn-logout" id="btn-logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 12H3m12 0-4-4m4 4-4 4M9 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H9"/></svg>
+        Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menu-btn">☰</button>
+      <h2 id="tb-title">Dashboard</h2>
+      <span class="clock" id="clock">—</span>
+    </div>
+
+    <div class="content">
+      <!-- DASHBOARD -->
+      <section class="view active" id="v-dashboard">
+        <div class="page-title">Panel general</div>
+        <div class="page-sub">Resumen del personal de intercambio registrado.</div>
+        <div class="cards" id="dash-cards"></div>
+        <div class="panel">
+          <div class="panel-h"><h3>Participantes por país</h3></div>
+          <div class="panel-b bars" id="dash-bars"><div class="tbl-empty">Cargando…</div></div>
+        </div>
+        <div class="panel only-admin">
+          <div class="panel-h"><h3>Actividad reciente</h3></div>
+          <div class="panel-b" id="dash-audit"><div class="tbl-empty">—</div></div>
+        </div>
+      </section>
+
+      <!-- EXTRANJEROS -->
+      <section class="view" id="v-extranjeros">
+        <div class="page-title">Extranjeros cursando en Honduras</div>
+        <div class="page-sub">Oficiales de otros países en centros de formación hondureños.</div>
+        <div class="toolbar">
+          <input type="search" id="bus-extranjeros" placeholder="Buscar por nombre, curso, centro…">
+          <select id="fil-extranjeros"><option value="">Todos los países</option></select>
+          <button class="btn btn-primary can-edit" onclick="abrirNuevo('extranjeros')">+ Nuevo</button>
+        </div>
+        <div class="tbl-wrap" id="tbl-extranjeros"></div>
+      </section>
+
+      <!-- HONDUREÑOS -->
+      <section class="view" id="v-hondurenos">
+        <div class="page-title">Hondureños en el exterior</div>
+        <div class="page-sub">Personal de las Fuerzas Armadas cursando estudios fuera del país.</div>
+        <div class="toolbar">
+          <input type="search" id="bus-hondurenos" placeholder="Buscar por nombre, curso, centro…">
+          <select id="fil-hondurenos"><option value="">Todos los países</option></select>
+          <button class="btn btn-primary can-edit" onclick="abrirNuevo('hondurenos')">+ Nuevo</button>
+        </div>
+        <div class="tbl-wrap" id="tbl-hondurenos"></div>
+      </section>
+
+      <!-- USUARIOS -->
+      <section class="view only-admin" id="v-usuarios">
+        <div class="page-title">Usuarios</div>
+        <div class="page-sub">Gestiona quién puede entrar y qué permisos tiene.</div>
+        <div class="toolbar">
+          <div style="flex:1"></div>
+          <button class="btn" onclick="abrirCambiarPass()">Cambiar mi contraseña</button>
+          <button class="btn btn-primary" onclick="abrirNuevoUsuario()">+ Nuevo usuario</button>
+        </div>
+        <div class="tbl-wrap" id="tbl-usuarios"></div>
+      </section>
+    </div>
+
+    <div class="footer">SIGEPI · Sistema de Gestión de Personal de Intercambio — Uso interno · FA-6</div>
+  </div>
+</div>
+
+<!-- MODAL REGISTRO -->
+<div class="overlay" id="ov-reg">
+  <div class="modal">
+    <div class="modal-h"><h3 id="reg-title">Nuevo registro</h3><button class="modal-x" onclick="cerrar('ov-reg')">&times;</button></div>
+    <div class="modal-b">
+      <div class="grid2">
+        <div class="field full"><label>Nombre completo *</label><input id="r-nombre" autocomplete="off"></div>
+        <div class="field"><label>Grado</label><input id="r-grado" list="dl-grado" autocomplete="off"></div>
+        <div class="field"><label>País</label><input id="r-pais" list="dl-pais" autocomplete="off"></div>
+        <div class="field full"><label>Curso</label><input id="r-curso" autocomplete="off"></div>
+        <div class="field full"><label>Centro de formación</label><input id="r-centro" autocomplete="off"></div>
+        <div class="field"><label>Fecha inicio</label><input type="date" id="r-inicio"></div>
+        <div class="field"><label>Fecha fin</label><input type="date" id="r-fin"></div>
+      </div>
+      <datalist id="dl-grado"></datalist>
+      <datalist id="dl-pais"></datalist>
+    </div>
+    <div class="modal-f"><button class="btn" onclick="cerrar('ov-reg')">Cancelar</button><button class="btn btn-primary" id="reg-save">Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL USUARIO -->
+<div class="overlay" id="ov-user">
+  <div class="modal">
+    <div class="modal-h"><h3>Nuevo usuario</h3><button class="modal-x" onclick="cerrar('ov-user')">&times;</button></div>
+    <div class="modal-b">
+      <div class="field"><label>Usuario *</label><input id="u-user" autocomplete="off"></div>
+      <div class="field"><label>Nombre para mostrar</label><input id="u-nombre" autocomplete="off"></div>
+      <div class="field"><label>Contraseña *</label><input id="u-pass" type="text" autocomplete="off"></div>
+      <div class="field"><label>Rol</label><select id="u-rol"><option value="consulta">Consulta (solo ver)</option><option value="editor">Editor (ver y editar)</option><option value="admin">Admin (todo)</option></select></div>
+    </div>
+    <div class="modal-f"><button class="btn" onclick="cerrar('ov-user')">Cancelar</button><button class="btn btn-primary" id="user-save">Crear</button></div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR PASS -->
+<div class="overlay" id="ov-pass">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-h"><h3>Cambiar mi contraseña</h3><button class="modal-x" onclick="cerrar('ov-pass')">&times;</button></div>
+    <div class="modal-b"><div class="field"><label>Nueva contraseña</label><input id="p-new" type="text" autocomplete="off"></div></div>
+    <div class="modal-f"><button class="btn" onclick="cerrar('ov-pass')">Cancelar</button><button class="btn btn-primary" id="pass-save">Guardar</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════ CONFIGURACIÓN ════════ */
+const API_URL = "https://script.google.com/macros/s/AKfycbwLzeuRVgzHohkXlNeJkt3ZUJxB4t8sblZJPAAlt4UVw4L9DH4GIhGr7BtmWlPW3NsN/exec";
+/* ════════════════════════════════ */
+
+const _mem={};
+const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return _mem[k]||null}},
+  set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){_mem[k]=v}},
+  del:k=>{try{localStorage.removeItem(k)}catch(e){delete _mem[k]}}};
+
+let S={token:store.get('sig_token'),rol:store.get('sig_rol'),nombre:store.get('sig_nombre'),usuario:store.get('sig_user')};
+let DATA={extranjeros:[],hondurenos:[]};
+let regCtx={tabla:null,id:null};
+
+/* ── API ── */
+async function api(params,method='GET'){
+  if(!API_URL) throw new Error('Falta configurar API_URL en el index.html');
+  if(method==='GET'){
+    const qs=Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&');
+    const r=await fetch(API_URL+'?'+qs+'&t='+Date.now(),{method:'GET',redirect:'follow'});
+    return chk(await r.json());
+  }
+  const r=await fetch(API_URL,{method:'POST',body:new URLSearchParams(params),redirect:'follow'});
+  return chk(await r.json());
+}
+function chk(res){ if(res&&res.authError){ cerrarSesion(true); throw new Error('Sesión expirada'); } return res; }
+
+function toast(msg,tipo){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(tipo?' '+tipo:'');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ── Reloj ── */
+function pad(n){return String(n).padStart(2,'0');}
+function reloj(){const d=new Date();let h=d.getHours();const a=h<12?'a.m.':'p.m.';h=h%12||12;document.getElementById('clock').textContent=pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+h+':'+pad(d.getMinutes())+' '+a;}
+setInterval(reloj,1000);
+
+/* ── LOGIN ── */
+async function entrar(){
+  const usuario=document.getElementById('l-user').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const err=document.getElementById('l-err'); err.classList.remove('show');
+  if(!usuario||!pass){err.textContent='Escribe usuario y contraseña.';err.classList.add('show');return;}
+  const btn=document.getElementById('l-btn'); btn.disabled=true; btn.textContent='Entrando…';
+  try{
+    const res=await api({action:'login',usuario,pass},'POST');
+    if(!res.ok){err.textContent=res.error||'No se pudo iniciar sesión.';err.classList.add('show');return;}
+    S={token:res.token,rol:res.rol,nombre:res.nombre,usuario:res.usuario};
+    store.set('sig_token',S.token);store.set('sig_rol',S.rol);store.set('sig_nombre',S.nombre);store.set('sig_user',S.usuario);
+    mostrarApp();
+  }catch(e){err.textContent=e.message;err.classList.add('show');}
+  finally{btn.disabled=false;btn.textContent='Iniciar sesión';}
+}
+function cerrarSesion(expirada){
+  try{ if(S.token) api({action:'logout',token:S.token},'POST'); }catch(e){}
+  store.del('sig_token');store.del('sig_rol');store.del('sig_nombre');store.del('sig_user');
+  S={token:null,rol:null,nombre:null,usuario:null};
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login').classList.remove('hidden');
+  document.getElementById('l-pass').value='';
+  if(expirada) setTimeout(()=>toast('Tu sesión expiró, vuelve a entrar.','err'),100);
+}
+
+/* ── Mostrar app ── */
+function mostrarApp(){
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.body.className='role-'+S.rol;
+  document.getElementById('sb-nombre').textContent=S.nombre;
+  document.getElementById('sb-rol').textContent=S.rol;
+  reloj();
+  cargarTodo();
+}
+
+/* ── Navegación ── */
+const titulos={dashboard:'Dashboard',extranjeros:'Extranjeros en HN',hondurenos:'Hondureños en exterior',usuarios:'Usuarios'};
+document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',e=>{
+  e.preventDefault();
+  document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));
+  a.classList.add('active');
+  const v=a.dataset.view;
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('v-'+v).classList.add('active');
+  document.getElementById('tb-title').textContent=titulos[v]||'';
+  document.getElementById('sidebar').classList.remove('open');
+  if(v==='usuarios') cargarUsuarios();
+  if(v==='dashboard') pintarDashboard();
+}));
+document.getElementById('menu-btn').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+
+/* ── Carga de datos ── */
+async function cargarTodo(){
+  try{
+    const [ext,hon]=await Promise.all([api({action:'list',tabla:'extranjeros',token:S.token}),api({action:'list',tabla:'hondurenos',token:S.token})]);
+    DATA.extranjeros=(ext.registros||[]); DATA.hondurenos=(hon.registros||[]);
+    pintarFiltros('extranjeros'); pintarFiltros('hondurenos');
+    pintarTabla('extranjeros'); pintarTabla('hondurenos');
+    pintarDashboard();
+  }catch(e){ if(e.message!=='Sesión expirada') toast(e.message,'err'); }
+}
+
+/* ── Estado del curso por fechas ── */
+function hoyISO(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function normFecha(s){if(!s)return'';let m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1]+'-'+m[2]+'-'+m[3];m=String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return m[3]+'-'+pad(+m[2])+'-'+pad(+m[1]);const d=new Date(s);return isNaN(d)?'':d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function fechaCorta(s){const n=normFecha(s);const m=n.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:'';}
+function estadoCurso(fin){const f=normFecha(fin);if(!f)return{txt:'Sin fecha',cls:'fin'};const hoy=hoyISO();if(f<hoy)return{txt:'Finalizado',cls:'fin'};const d=(new Date(f)-new Date(hoy))/86400000;if(d<=30)return{txt:'Por finalizar',cls:'pronto'};return{txt:'En curso',cls:'curso'};}
+
+/* ── Filtros país ── */
+function pintarFiltros(tabla){
+  const sel=document.getElementById('fil-'+tabla);
+  const paises=[...new Set(DATA[tabla].map(r=>r.pais).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">Todos los países</option>'+paises.map(p=>`<option>${esc(p)}</option>`).join('');
+}
+
+/* ── Tablas ── */
+function pintarTabla(tabla){
+  const cont=document.getElementById('tbl-'+tabla);
+  const q=(document.getElementById('bus-'+tabla).value||'').toLowerCase();
+  const fp=document.getElementById('fil-'+tabla).value;
+  let regs=DATA[tabla].filter(r=>{
+    if(fp&&r.pais!==fp)return false;
+    if(q){const blob=(r.nombre+' '+r.grado+' '+r.pais+' '+r.curso+' '+r.centro).toLowerCase();if(blob.indexOf(q)===-1)return false;}
+    return true;
+  });
+  if(!regs.length){cont.innerHTML='<div class="tbl-empty">Sin registros que coincidan.</div>';return;}
+  const rows=regs.map(r=>{
+    const e=estadoCurso(r.fin);
+    return `<tr>
+      <td><div class="nm">${esc(r.nombre)}</div><div class="mono">${esc(r.id)} · ${esc(r.grado||'—')}</div></td>
+      <td>${esc(r.pais||'—')}</td>
+      <td>${esc(r.curso||'—')}</td>
+      <td>${esc(r.centro||'—')}</td>
+      <td>${fechaCorta(r.inicio)||'—'}<br><span class="mono">→ ${fechaCorta(r.fin)||'—'}</span></td>
+      <td><span class="pill ${e.cls}">${e.txt}</span></td>
+      <td><div class="acts">
+        <button class="btn btn-sm can-edit" onclick="abrirEditar('${tabla}','${r.id}')">Editar</button>
+        <button class="btn btn-sm btn-danger only-admin" onclick="borrarReg('${tabla}','${r.id}')">Borrar</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  cont.innerHTML=`<table><thead><tr><th>Nombre / Grado</th><th>País</th><th>Curso</th><th>Centro</th><th>Fechas</th><th>Estado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+['extranjeros','hondurenos'].forEach(t=>{
+  document.getElementById('bus-'+t).addEventListener('input',()=>pintarTabla(t));
+  document.getElementById('fil-'+t).addEventListener('change',()=>pintarTabla(t));
+});
+
+/* ── Dashboard ── */
+function pintarDashboard(){
+  const ext=DATA.extranjeros, hon=DATA.hondurenos, todos=ext.concat(hon);
+  const enCurso=todos.filter(r=>estadoCurso(r.fin).cls==='curso').length;
+  const pronto=todos.filter(r=>estadoCurso(r.fin).cls==='pronto').length;
+  const cards=[
+    {n:ext.length,l:'Extranjeros en Honduras',ic:'blue',svg:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/>'},
+    {n:hon.length,l:'Hondureños en exterior',ic:'green',svg:'<path d="M3 12h18M12 3v18"/>'},
+    {n:enCurso,l:'Cursos en curso',ic:'slate',svg:'<path d="M5 12l5 5L20 7"/>'},
+    {n:pronto,l:'Por finalizar (≤30 días)',ic:'amber',svg:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>'}
+  ];
+  document.getElementById('dash-cards').innerHTML=cards.map(c=>`<div class="stat"><div class="ico ${c.ic}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${c.svg}</svg></div><div class="n">${c.n}</div><div class="l">${c.l}</div></div>`).join('');
+  // barras por país
+  const cont={}; todos.forEach(r=>{const p=r.pais||'(sin país)';cont[p]=(cont[p]||0)+1;});
+  const arr=Object.keys(cont).map(p=>({p,n:cont[p]})).sort((a,b)=>b.n-a.n);
+  const max=Math.max(1,...arr.map(x=>x.n));
+  document.getElementById('dash-bars').innerHTML=arr.length?arr.map(x=>`<div class="bar-row"><div class="bl">${esc(x.p)}</div><div class="bt"><div class="bf" style="width:${x.n/max*100}%"></div></div><div class="bn">${x.n}</div></div>`).join(''):'<div class="tbl-empty">Aún no hay registros.</div>';
+  if(S.rol==='admin') cargarAuditoria();
+}
+async function cargarAuditoria(){
+  try{const res=await api({action:'auditoria',token:S.token});
+    const a=res.auditoria||[];
+    document.getElementById('dash-audit').innerHTML=a.length?('<table><tbody>'+a.slice(0,12).map(x=>`<tr><td class="mono" style="white-space:nowrap">${esc(x.fecha)}</td><td><b>${esc(x.usuario)}</b></td><td>${esc(x.accion)} ${esc(x.tabla)} ${esc(x.id)}</td><td>${esc(x.detalle||'')}</td></tr>`).join('')+'</tbody></table>'):'<div class="tbl-empty">Sin actividad.</div>';
+  }catch(e){}
+}
+
+/* ── Modal registro ── */
+function llenarDatalists(){
+  const todos=DATA.extranjeros.concat(DATA.hondurenos);
+  const grados=[...new Set(todos.map(r=>r.grado).filter(Boolean))].sort();
+  const paises=[...new Set(todos.map(r=>r.pais).filter(Boolean))].sort();
+  document.getElementById('dl-grado').innerHTML=grados.map(g=>`<option value="${esc(g)}">`).join('');
+  document.getElementById('dl-pais').innerHTML=paises.map(p=>`<option value="${esc(p)}">`).join('');
+}
+function abrirNuevo(tabla){
+  regCtx={tabla,id:null};
+  document.getElementById('reg-title').textContent='Nuevo registro';
+  ['nombre','grado','pais','curso','centro','inicio','fin'].forEach(f=>document.getElementById('r-'+f).value='');
+  llenarDatalists(); abrir('ov-reg');
+}
+function abrirEditar(tabla,id){
+  const r=DATA[tabla].find(x=>x.id===id); if(!r)return;
+  regCtx={tabla,id};
+  document.getElementById('reg-title').textContent='Editar registro';
+  document.getElementById('r-nombre').value=r.nombre||'';
+  document.getElementById('r-grado').value=r.grado||'';
+  document.getElementById('r-pais').value=r.pais||'';
+  document.getElementById('r-curso').value=r.curso||'';
+  document.getElementById('r-centro').value=r.centro||'';
+  document.getElementById('r-inicio').value=normFecha(r.inicio);
+  document.getElementById('r-fin').value=normFecha(r.fin);
+  llenarDatalists(); abrir('ov-reg');
+}
+document.getElementById('reg-save').addEventListener('click',async function(){
+  const datos={
+    nombre:document.getElementById('r-nombre').value.trim(),
+    grado:document.getElementById('r-grado').value.trim(),
+    pais:document.getElementById('r-pais').value.trim(),
+    curso:document.getElementById('r-curso').value.trim(),
+    centro:document.getElementById('r-centro').value.trim(),
+    inicio:document.getElementById('r-inicio').value,
+    fin:document.getElementById('r-fin').value
+  };
+  if(!datos.nombre){toast('El nombre es obligatorio.','err');return;}
+  this.disabled=true;this.textContent='Guardando…';
+  try{
+    const action=regCtx.id?'actualizar':'crear';
+    const res=await api(Object.assign({action,tabla:regCtx.tabla,token:S.token,id:regCtx.id||''},datos),'POST');
+    if(!res.ok)throw new Error(res.error);
+    toast(regCtx.id?'Registro actualizado.':'Registro creado.','ok');
+    cerrar('ov-reg'); await cargarTodo();
+  }catch(e){toast(e.message,'err');}
+  finally{this.disabled=false;this.textContent='Guardar';}
+});
+async function borrarReg(tabla,id){
+  if(!confirm('¿Borrar este registro? Esta acción no se puede deshacer.'))return;
+  try{const res=await api({action:'borrar',tabla,token:S.token,id},'POST');if(!res.ok)throw new Error(res.error);toast('Registro borrado.','ok');await cargarTodo();}
+  catch(e){toast(e.message,'err');}
+}
+
+/* ── Usuarios ── */
+async function cargarUsuarios(){
+  try{
+    const res=await api({action:'usuarios',token:S.token});
+    const us=res.usuarios||[];
+    const rows=us.map(u=>`<tr>
+      <td><div class="nm">${esc(u.nombre||u.usuario)}</div><div class="mono">${esc(u.usuario)}</div></td>
+      <td><select class="btn btn-sm" onchange="cambiarRol('${esc(u.usuario)}',this.value)">
+        ${['consulta','editor','admin'].map(r=>`<option value="${r}" ${u.rol===r?'selected':''}>${r}</option>`).join('')}
+      </select></td>
+      <td><span class="pill ${u.activo?'curso':'fin'}">${u.activo?'Activo':'Inactivo'}</span></td>
+      <td><div class="acts"><button class="btn btn-sm" onclick="toggleUsuario('${esc(u.usuario)}',${u.activo?'false':'true'})">${u.activo?'Desactivar':'Activar'}</button></div></td>
+    </tr>`).join('');
+    document.getElementById('tbl-usuarios').innerHTML=`<table><thead><tr><th>Nombre / Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  }catch(e){toast(e.message,'err');}
+}
+async function cambiarRol(usuario,rol){try{const r=await api({action:'usuario_rol',token:S.token,usuario,rol},'POST');if(!r.ok)throw new Error(r.error);toast('Rol actualizado.','ok');}catch(e){toast(e.message,'err');cargarUsuarios();}}
+async function toggleUsuario(usuario,activo){try{const r=await api({action:'usuario_estado',token:S.token,usuario,activo},'POST');if(!r.ok)throw new Error(r.error);toast('Estado actualizado.','ok');cargarUsuarios();}catch(e){toast(e.message,'err');}}
+function abrirNuevoUsuario(){['u-user','u-nombre','u-pass'].forEach(i=>document.getElementById(i).value='');document.getElementById('u-rol').value='consulta';abrir('ov-user');}
+document.getElementById('user-save').addEventListener('click',async function(){
+  const d={action:'usuario_crear',token:S.token,usuario:document.getElementById('u-user').value.trim(),nombre:document.getElementById('u-nombre').value.trim(),pass:document.getElementById('u-pass').value,rol:document.getElementById('u-rol').value};
+  if(!d.usuario||!d.pass){toast('Usuario y contraseña requeridos.','err');return;}
+  this.disabled=true;
+  try{const r=await api(d,'POST');if(!r.ok)throw new Error(r.error);toast('Usuario creado.','ok');cerrar('ov-user');cargarUsuarios();}
+  catch(e){toast(e.message,'err');}finally{this.disabled=false;}
+});
+function abrirCambiarPass(){document.getElementById('p-new').value='';abrir('ov-pass');}
+document.getElementById('pass-save').addEventListener('click',async function(){
+  const pass=document.getElementById('p-new').value;
+  if(pass.length<5){toast('Mínimo 5 caracteres.','err');return;}
+  this.disabled=true;
+  try{const r=await api({action:'cambiar_pass',token:S.token,pass},'POST');if(!r.ok)throw new Error(r.error);toast('Contraseña cambiada.','ok');cerrar('ov-pass');}
+  catch(e){toast(e.message,'err');}finally{this.disabled=false;}
+});
+
+/* ── Modales util ── */
+function abrir(id){document.getElementById(id).classList.add('show');}
+function cerrar(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
+
+/* ── Listeners login ── */
+document.getElementById('l-btn').addEventListener('click',entrar);
+document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')entrar();});
+document.getElementById('btn-logout').addEventListener('click',()=>{if(confirm('¿Cerrar sesión?'))cerrarSesion(false);});
+
+/* ── Init ── */
+(function init(){
+  if(!API_URL){document.getElementById('l-err').textContent='⚠ Falta configurar API_URL en el index.html';document.getElementById('l-err').classList.add('show');return;}
+  if(S.token){ mostrarApp(); }
+})();
+</script>
+</body>
+</html>
