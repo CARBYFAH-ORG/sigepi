@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     --bg:#f1f5f9;--card:#fff;--soft:#f8fafc;--border:#e2e8f0;
@@ -206,6 +207,9 @@
       <a data-view="dashboard" class="active">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
         Dashboard</a>
+      <a data-view="reportes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12a0 0 0 0 1 0 0H4z"/><path d="M9 13l2 2 4-4"/></svg>
+        Reportes</a>
       <div class="grp">Registros</div>
       <a data-view="extranjeros">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>
@@ -276,6 +280,24 @@
           <button class="btn btn-primary can-edit" onclick="abrirNuevo('hondurenos')">+ Nuevo</button>
         </div>
         <div class="tbl-wrap" id="tbl-hondurenos"></div>
+      </section>
+
+      <!-- REPORTES -->
+      <section class="view" id="v-reportes">
+        <div class="page-title">Reportes</div>
+        <div class="page-sub">Filtra el personal y expórtalo a Excel.</div>
+        <div class="panel"><div class="panel-b">
+          <div class="toolbar">
+            <select id="rep-sec" onchange="aplicarReporte()"><option value="">Ambas secciones</option><option value="extranjeros">Extranjeros en HN</option><option value="hondurenos">Hondureños en exterior</option></select>
+            <select id="rep-pais" onchange="aplicarReporte()"><option value="">Todos los países</option></select>
+            <select id="rep-arma" onchange="aplicarReporte()"><option value="">Todas las armas</option></select>
+            <select id="rep-est" onchange="aplicarReporte()"><option value="">Todos los estados</option><option>En curso</option><option>Por finalizar</option><option>Finalizado</option></select>
+            <input type="search" id="rep-q" placeholder="Buscar…" style="flex:1" oninput="aplicarReporte()">
+            <button class="btn btn-primary" onclick="exportarExcel()">⬇ Exportar a Excel</button>
+          </div>
+          <div id="rep-count" style="color:var(--text-dim);font-size:.85rem"></div>
+        </div></div>
+        <div class="tbl-wrap" id="rep-tbl"></div>
       </section>
 
       <!-- CATÁLOGOS -->
@@ -448,7 +470,7 @@ function mostrarApp(){
 }
 
 /* ── Navegación ── */
-const titulos={dashboard:'Dashboard',extranjeros:'Extranjeros en HN',hondurenos:'Hondureños en exterior',catalogos:'Catálogos',usuarios:'Usuarios'};
+const titulos={dashboard:'Dashboard',reportes:'Reportes',extranjeros:'Extranjeros en HN',hondurenos:'Hondureños en exterior',catalogos:'Catálogos',usuarios:'Usuarios'};
 document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',e=>{
   e.preventDefault();
   document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));
@@ -460,6 +482,7 @@ document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',e=>{
   document.getElementById('sidebar').classList.remove('open');
   if(v==='usuarios') cargarUsuarios();
   if(v==='catalogos') renderCatalogos();
+  if(v==='reportes') renderReportes();
   if(v==='dashboard') pintarDashboard();
 }));
 document.getElementById('menu-btn').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
@@ -663,6 +686,65 @@ document.getElementById('pass-save').addEventListener('click',async function(){
   try{const r=await api({action:'cambiar_pass',token:S.token,pass},'POST');if(!r.ok)throw new Error(r.error);toast('Contraseña cambiada.','ok');cerrar('ov-pass');}
   catch(e){toast(e.message,'err');}finally{this.disabled=false;}
 });
+
+/* ── REPORTES ── */
+function reporteData(){
+  const a=DATA.extranjeros.map(r=>Object.assign({seccion:'Extranjero en HN',_tabla:'extranjeros'},r));
+  const b=DATA.hondurenos.map(r=>Object.assign({seccion:'Hondureño en exterior',_tabla:'hondurenos'},r));
+  return a.concat(b);
+}
+function filtrarReporte(){
+  const sec=document.getElementById('rep-sec').value;
+  const pais=document.getElementById('rep-pais').value;
+  const arma=document.getElementById('rep-arma').value;
+  const est=document.getElementById('rep-est').value;
+  const q=(document.getElementById('rep-q').value||'').toLowerCase();
+  return reporteData().filter(r=>{
+    if(sec&&r._tabla!==sec)return false;
+    if(pais&&r.pais!==pais)return false;
+    if(arma&&(r.arma||'')!==arma)return false;
+    if(est&&estadoCurso(r.fin).txt!==est)return false;
+    if(q){const b=(r.nombre+' '+r.grado+' '+(r.arma||'')+' '+r.pais+' '+r.curso+' '+r.centro).toLowerCase();if(b.indexOf(q)===-1)return false;}
+    return true;
+  });
+}
+function renderReportes(){
+  const datos=reporteData();
+  const paises=[...new Set(datos.map(r=>r.pais).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  const armas=[...new Set(datos.map(r=>r.arma).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  document.getElementById('rep-pais').innerHTML='<option value="">Todos los países</option>'+paises.map(p=>`<option>${esc(p)}</option>`).join('');
+  document.getElementById('rep-arma').innerHTML='<option value="">Todas las armas</option>'+armas.map(a=>`<option>${esc(a)}</option>`).join('');
+  aplicarReporte();
+}
+function aplicarReporte(){
+  const regs=filtrarReporte();
+  document.getElementById('rep-count').textContent=regs.length+' registro(s)';
+  const cont=document.getElementById('rep-tbl');
+  if(!regs.length){cont.innerHTML='<div class="tbl-empty">Sin resultados con esos filtros.</div>';return;}
+  const rows=regs.map(r=>{const e=estadoCurso(r.fin);return `<tr>
+    <td><div class="nm">${esc(r.nombre)}</div><div class="mono">${esc(r.id)} · ${esc(r.grado||'—')}${r.arma?' · '+esc(r.arma):''}</div></td>
+    <td>${esc(r.seccion)}</td><td>${esc(r.pais||'—')}</td><td>${esc(r.curso||'—')}</td>
+    <td>${fechaCorta(r.inicio)||'—'}<br><span class="mono">→ ${fechaCorta(r.fin)||'—'}</span></td>
+    <td><span class="pill ${e.cls}">${e.txt}</span></td></tr>`;}).join('');
+  cont.innerHTML=`<table><thead><tr><th>Nombre / Grado</th><th>Sección</th><th>País</th><th>Curso</th><th>Fechas</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function exportarExcel(){
+  if(typeof XLSX==='undefined'){toast('No se pudo cargar el exportador. Revisa tu conexión e intenta de nuevo.','err');return;}
+  const regs=filtrarReporte();
+  if(!regs.length){toast('No hay datos para exportar con esos filtros.','err');return;}
+  const filas=regs.map(r=>({
+    'ID':r.id,'Sección':r.seccion,'Nombre':r.nombre,'Grado':r.grado||'','Arma':r.arma||'',
+    'País':r.pais||'','Curso':r.curso||'','Centro de formación':r.centro||'',
+    'Inicio':fechaCorta(r.inicio),'Fin':fechaCorta(r.fin),'Estado':estadoCurso(r.fin).txt
+  }));
+  const ws=XLSX.utils.json_to_sheet(filas);
+  ws['!cols']=[{wch:10},{wch:20},{wch:28},{wch:16},{wch:14},{wch:18},{wch:34},{wch:34},{wch:12},{wch:12},{wch:14}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Personal');
+  const f=new Date();
+  XLSX.writeFile(wb,'SIGEPI_reporte_'+f.getFullYear()+pad(f.getMonth()+1)+pad(f.getDate())+'.xlsx');
+  toast('Excel generado ('+regs.length+' registros).','ok');
+}
 
 /* ── CATÁLOGOS ── */
 function renderCatalogos(){
